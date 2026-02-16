@@ -62,21 +62,21 @@ app.use(notFoundHandler);
 app.use(errorHandler);
 
 // Start server
-const PORT = config.port;
+let PORT = config.port;
 
-async function startServer() {
+async function startServer(port = PORT) {
   try {
     // Initialize database connection
     await initializeDatabase();
     
-    // Start listening
-    app.listen(PORT, () => {
+    // Create server instance - MUST bind to 0.0.0.0 for Railway
+    const server = app.listen(port, '0.0.0.0', () => {
       console.log(`
 ╔════════════════════════════════════════════════════╗
 ║                                                    ║
 ║   🍽️  Papaloma Inventory API (PostgreSQL)         ║
 ║                                                    ║
-║   Server running on: http://localhost:${PORT}         ║
+║   Server running on port: ${port}                     ║
 ║   Environment: ${config.nodeEnv.padEnd(30)}   ║
 ║   Database: PostgreSQL                             ║
 ║                                                    ║
@@ -91,6 +91,21 @@ async function startServer() {
 ╚════════════════════════════════════════════════════╝
       `);
     });
+
+    // Handle port already in use error
+    server.on('error', (error) => {
+      if (error.code === 'EADDRINUSE') {
+        console.log(`⚠️  Port ${port} is already in use.`);
+        const nextPort = port + 1;
+        console.log(`🔄 Trying port ${nextPort}...`);
+        server.close();
+        startServer(nextPort);
+      } else {
+        console.error('❌ Server error:', error);
+        process.exit(1);
+      }
+    });
+    
   } catch (error) {
     console.error('Failed to start server:', error);
     process.exit(1);
@@ -98,5 +113,30 @@ async function startServer() {
 }
 
 startServer();
+
+// Global error handlers
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+  // Don't exit in production, just log
+  if (process.env.NODE_ENV !== 'production') {
+    process.exit(1);
+  }
+});
+
+process.on('uncaughtException', (error) => {
+  console.error('❌ Uncaught Exception:', error);
+  process.exit(1);
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('👋 SIGTERM signal received: closing HTTP server');
+  process.exit(0);
+});
+
+process.on('SIGINT', () => {
+  console.log('👋 SIGINT signal received: closing HTTP server');
+  process.exit(0);
+});
 
 export default app;
