@@ -11,7 +11,9 @@ const config = {
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
   
   // CORS Configuration
-  corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+  corsOrigin: process.env.CORS_ORIGIN 
+    ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
+    : ['http://localhost:5173'],
   
   // PostgreSQL Database Configuration
   database: {
