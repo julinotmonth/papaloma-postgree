@@ -13,7 +13,7 @@ const config = {
   // CORS Configuration
   corsOrigin: process.env.CORS_ORIGIN 
     ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
-    : ['http://localhost:5173'],
+    : ['http://localhost:5173', 'https://papaloma.netlify.app'],
   
   // PostgreSQL Database Configuration
   database: {

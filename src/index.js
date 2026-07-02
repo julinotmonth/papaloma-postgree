@@ -34,11 +34,17 @@ const corsOptions = {
     
     // Check if origin is in allowed list
     if (config.corsOrigin.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      console.warn(`⚠️  CORS blocked request from origin: ${origin}`);
-      callback(new Error('Not allowed by CORS'));
+      return callback(null, true);
     }
+
+    // Also allow any Netlify preview/production subdomain automatically,
+    // so a redeploy or renamed Netlify site doesn't break CORS again.
+    if (/^https:\/\/[a-z0-9-]+\.netlify\.app$/.test(origin)) {
+      return callback(null, true);
+    }
+
+    console.warn(`⚠️  CORS blocked request from origin: ${origin}`);
+    callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
